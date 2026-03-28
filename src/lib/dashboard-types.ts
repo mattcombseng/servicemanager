@@ -33,6 +33,17 @@ export type InvoiceView = {
   total: number;
   notes: string | null;
   customerName: string;
+  paymentStatus: "PENDING" | "SUCCEEDED" | "FAILED" | null;
+  paymentLinkUrl: string | null;
+};
+
+export type PaymentSummaryView = {
+  id: string;
+  invoiceId: string;
+  invoiceCustomerName: string;
+  amount: number;
+  status: "PENDING" | "SUCCEEDED" | "FAILED";
+  createdAt: string;
 };
 
 export type StaffDashboardPayload = {
@@ -40,6 +51,34 @@ export type StaffDashboardPayload = {
   services: ServiceView[];
   appointments: AppointmentView[];
   invoices: InvoiceView[];
+};
+
+export type AnalyticsPayload = {
+  totals: {
+    invoicesCount: number;
+    customersCount: number;
+    paymentsReceived: number;
+    outstandingAmount: number;
+  };
+  revenueByDay: Array<{
+    day: string;
+    amount: number;
+  }>;
+  topServices: Array<{
+    serviceId: string;
+    serviceName: string;
+    count: number;
+    revenue: number;
+  }>;
+  appointmentUtilizationByDay: Array<{
+    day: string;
+    count: number;
+  }>;
+  outstandingInvoiceTotal: number;
+  upcomingSevenDaysAppointments: number;
+  noShowRiskCount: number;
+  queuedNotifications: number;
+  topServiceName: string | null;
 };
 
 export type CustomerDashboardData = {

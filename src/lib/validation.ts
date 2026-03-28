@@ -89,3 +89,30 @@ export const invoiceStatusUpdateSchema = z.object({
   invoiceId: z.string().cuid("Invalid invoice identifier."),
   status: z.enum(["SENT", "PAID"]),
 });
+
+export const paymentLinkCreateSchema = z.object({
+  invoiceId: z.string().cuid("Invalid invoice identifier."),
+  expiresInHours: z.coerce
+    .number()
+    .int("Expiration hours must be a whole number.")
+    .min(1, "Expiration hours must be at least 1.")
+    .max(24 * 14, "Expiration hours cannot exceed 14 days.")
+    .default(24 * 7),
+  amount: z.coerce.number().positive("Amount must be greater than zero.").optional(),
+  externalRef: z.string().trim().optional(),
+});
+
+export const paymentWebhookSchema = z.object({
+  paymentLinkId: z.string().cuid("Invalid payment link identifier."),
+  status: z.enum(["SUCCEEDED", "FAILED"]),
+  amount: z.coerce.number().positive("Amount must be greater than zero.").optional(),
+  externalRef: z.string().trim().optional(),
+});
+
+export const notificationSendSchema = z.object({
+  type: z.enum(["APPOINTMENT_REMINDER", "INVOICE_DUE", "PAYMENT_RECEIVED"]),
+  customerId: z.string().cuid("Invalid customer identifier."),
+  invoiceId: z.string().cuid("Invalid invoice identifier.").optional(),
+  subject: z.string().trim().min(3, "Subject is required."),
+  body: z.string().trim().min(3, "Body is required."),
+});

@@ -34,3 +34,15 @@ export function parseMoney(value: number): Prisma.Decimal {
 export function toMoneyNumber(value: Prisma.Decimal): number {
   return Number(value.toString());
 }
+
+export function subDays(date: Date, days: number): Date {
+  return new Date(date.getTime() - days * 24 * 60 * 60 * 1000);
+}
+
+export function startOfDay(date = new Date()): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+
+export function endOfDay(date = new Date()): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}

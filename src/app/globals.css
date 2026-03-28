@@ -235,6 +235,54 @@ button {
   color: #334155;
 }
 
+.summary-stats {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.mini-chart {
+  margin-top: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.mini-bar-row {
+  display: grid;
+  gap: 4px;
+}
+
+.mini-bar-label {
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.mini-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.mini-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #2563eb;
+}
+
+.payments-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.payment-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
 @media (max-width: 900px) {
   .calendar-grid {
     grid-template-columns: repeat(2, minmax(160px, 1fr));
