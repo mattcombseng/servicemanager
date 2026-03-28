@@ -79,16 +79,17 @@ Open `http://localhost:3000`.
 
 ### First-time setup for database schema
 
-After setting `DATABASE_URL`, apply migrations:
+After setting `DATABASE_URL`, apply committed migrations:
 
 ```bash
-npx prisma migrate dev --name init
+npx prisma migrate dev
 ```
 
 This repo now includes committed migrations for:
 
 - `20260301090000_phase2_core_auth` (core shop + auth models)
 - `20260301100000_phase3_payments_notifications_analytics` (payments/reminders/analytics additions)
+- `20260327130000_phase3_payments_notifications_analytics` (legacy compatibility alias for older local migration histories)
 
 ## Build
 
