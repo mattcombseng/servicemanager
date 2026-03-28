@@ -7,9 +7,14 @@ import { useRouter } from "next/navigation";
 type Props = {
   role: "CUSTOMER" | "STAFF";
   inviteToken?: string;
+  allowInitialStaffSetup?: boolean;
 };
 
-export default function RegisterForm({ role, inviteToken }: Props) {
+export default function RegisterForm({
+  role,
+  inviteToken,
+  allowInitialStaffSetup = false,
+}: Props) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -109,6 +114,11 @@ export default function RegisterForm({ role, inviteToken }: Props) {
             onChange={(event) => setPhone(event.target.value)}
           />
         </>
+      ) : null}
+      {role === "STAFF" && allowInitialStaffSetup ? (
+        <p className="muted">
+          Initial setup mode: this creates the first staff user without an invite token.
+        </p>
       ) : null}
 
       <label htmlFor={`password-${role}`}>Password</label>

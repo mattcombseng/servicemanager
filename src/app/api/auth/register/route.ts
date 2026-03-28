@@ -19,36 +19,42 @@ export async function POST(request: Request) {
     const { name, email, password, role, phone, inviteToken } = parsed.data;
     const normalizedEmail = email.toLowerCase();
     if (role === "STAFF") {
-      if (!inviteToken) {
+      const existingStaffCount = await prisma.user.count({
+        where: { role: "STAFF" },
+      });
+      const isBootstrapFirstStaff = existingStaffCount === 0;
+      if (!inviteToken && !isBootstrapFirstStaff) {
         return NextResponse.json(
           { error: "A valid staff invite is required." },
           { status: 403 }
         );
       }
 
-      const inviteHash = hashToken(inviteToken);
-      const invite = await prisma.staffInvite.findUnique({
-        where: { tokenHash: inviteHash },
-        select: {
-          id: true,
-          email: true,
-          expiresAt: true,
-          usedAt: true,
-        },
-      });
+      if (inviteToken) {
+        const inviteHash = hashToken(inviteToken);
+        const invite = await prisma.staffInvite.findUnique({
+          where: { tokenHash: inviteHash },
+          select: {
+            id: true,
+            email: true,
+            expiresAt: true,
+            usedAt: true,
+          },
+        });
 
-      if (!invite || invite.usedAt || invite.expiresAt < new Date()) {
-        return NextResponse.json(
-          { error: "Invalid or expired staff invite." },
-          { status: 403 }
-        );
-      }
+        if (!invite || invite.usedAt || invite.expiresAt < new Date()) {
+          return NextResponse.json(
+            { error: "Invalid or expired staff invite." },
+            { status: 403 }
+          );
+        }
 
-      if (invite.email.toLowerCase() !== normalizedEmail) {
-        return NextResponse.json(
-          { error: "Staff invite email does not match registration email." },
-          { status: 403 }
-        );
+        if (invite.email.toLowerCase() !== normalizedEmail) {
+          return NextResponse.json(
+            { error: "Staff invite email does not match registration email." },
+            { status: 403 }
+          );
+        }
       }
     }
 

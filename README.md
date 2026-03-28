@@ -33,6 +33,7 @@ PostgreSQL-backed shop management platform built with **TypeScript** and **Next.
 - **Staff invite-only onboarding**
   - Staff registration requires a valid invite token created by existing staff
   - Staff invite management screen at `/staff/invites`
+  - Bootstrap behavior: if no staff users exist yet, the first staff account can self-register at `/register?role=staff` without an invite token
 - **Calendar-style scheduling**
   - Staff dashboard includes a 14-day grouped calendar-style appointment view
 - **Payment links and processing (simulated)**
@@ -111,5 +112,6 @@ No custom server is required.
 
 - Credential login requires verified email.
 - Google login remains customer-only.
+- Staff registration is invite-only after initial bootstrap. The first ever staff user (when staff count is zero) may register without an invite token.
 - Password reset and email verification tokens are currently returned in API responses for development/demo purposes. In production, these should be delivered through an email provider.
 - Payment links and webhook flow are currently simulated for development. Replace with Stripe checkout + signed webhooks in production.
