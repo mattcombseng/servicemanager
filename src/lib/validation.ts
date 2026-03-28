@@ -6,6 +6,30 @@ export const registrationSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters."),
   role: z.enum(["STAFF", "CUSTOMER"]),
   phone: z.string().trim().optional(),
+  inviteToken: z.string().trim().optional(),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("A valid email is required."),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(16, "Reset token is required."),
+  password: z.string().min(8, "Password must be at least 8 characters."),
+});
+
+export const verifyEmailSchema = z.object({
+  token: z.string().trim().min(16, "Verification token is required."),
+});
+
+export const staffInviteCreateSchema = z.object({
+  email: z.string().trim().email("A valid email is required."),
+  daysValid: z.coerce
+    .number()
+    .int("Days valid must be a whole number.")
+    .min(1, "Days valid must be at least 1.")
+    .max(30, "Days valid cannot exceed 30.")
+    .default(7),
 });
 
 export const customerCreateSchema = z.object({

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import type {
@@ -118,6 +119,19 @@ export default function StaffDashboardPage() {
         .slice(0, 5),
     [state.appointments]
   );
+
+  const calendarGroups = useMemo(() => {
+    const groups = new Map<string, AppointmentView[]>();
+    for (const appointment of [...state.appointments].sort((a, b) =>
+      a.startsAt.localeCompare(b.startsAt)
+    )) {
+      const dayKey = appointment.startsAt.slice(0, 10);
+      const current = groups.get(dayKey) ?? [];
+      current.push(appointment);
+      groups.set(dayKey, current);
+    }
+    return [...groups.entries()].slice(0, 14);
+  }, [state.appointments]);
 
   async function handleCreateCustomer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -242,6 +256,16 @@ export default function StaffDashboardPage() {
         <button type="button" onClick={() => void signOut({ callbackUrl: "/" })}>
           Sign out
         </button>
+        <Link href="/staff/calendar">
+          <button type="button" className="secondary">
+            Calendar view
+          </button>
+        </Link>
+        <Link href="/staff/invites">
+          <button type="button" className="secondary">
+            Staff invites
+          </button>
+        </Link>
       </div>
       {error ? <p className="error-text">{error}</p> : null}
 
@@ -336,6 +360,43 @@ export default function StaffDashboardPage() {
             />
             <button type="submit">Save Service</button>
           </form>
+        </article>
+      </section>
+
+      <section className="grid">
+        <article className="card">
+          <h2>Scheduling Calendar (next 14 days with appointments)</h2>
+          {calendarGroups.length === 0 ? (
+            <p className="muted">No appointments on the calendar yet.</p>
+          ) : (
+            <div className="calendar-grid">
+              {calendarGroups.map(([dateKey, appointments]) => (
+                <div className="calendar-day" key={dateKey}>
+                  <header>{new Date(`${dateKey}T00:00:00`).toLocaleDateString()}</header>
+                  <ul className="calendar-appointments">
+                    {appointments.map((entry) => (
+                      <li className="calendar-item" key={entry.id}>
+                        <div className="calendar-item-time">
+                          {new Date(entry.startsAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                        <div className="calendar-item-label">{entry.customerName}</div>
+                        <div className="muted">{entry.serviceName}</div>
+                        <span
+                          className={`badge badge-${statusLabel(entry.status)}`}
+                          style={{ marginTop: 6 }}
+                        >
+                          {statusLabel(entry.status)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </article>
       </section>
 
@@ -533,6 +594,7 @@ export default function StaffDashboardPage() {
           )}
         </article>
       </section>
+
     </main>
   );
 }

@@ -2,7 +2,7 @@
 
 PostgreSQL-backed shop management platform built with **TypeScript** and **Next.js**, designed to deploy easily on **Vercel**.
 
-## Phase 2 Features
+## Current Features
 
 - **Staff authentication**
   - Email/password sign-in for staff users
@@ -24,6 +24,17 @@ PostgreSQL-backed shop management platform built with **TypeScript** and **Next.
   - Customer self-booking auto-generates draft invoices
 - **PostgreSQL persistence**
   - All business data is stored in Postgres via Prisma ORM
+- **Password reset**
+  - Forgot-password token generation
+  - Password reset with one-time token usage
+- **Email verification**
+  - New accounts must verify email before credential login
+  - Verification tokens are one-time and expire
+- **Staff invite-only onboarding**
+  - Staff registration requires a valid invite token created by existing staff
+  - Staff invite management screen at `/staff/invites`
+- **Calendar-style scheduling**
+  - Staff dashboard includes a 14-day grouped calendar-style appointment view
 
 ## Tech Stack
 
@@ -58,6 +69,14 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+### First-time setup for database schema
+
+After setting `DATABASE_URL`, apply migrations:
+
+```bash
+npx prisma migrate dev --name init
+```
+
 ## Build
 
 ```bash
@@ -73,3 +92,9 @@ npm run build
 5. Deploy.
 
 No custom server is required.
+
+## Security/flow notes
+
+- Credential login requires verified email.
+- Google login remains customer-only.
+- Password reset and email verification tokens are currently returned in API responses for development/demo purposes. In production, these should be delivered through an email provider.

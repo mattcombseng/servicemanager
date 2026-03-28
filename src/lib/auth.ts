@@ -1,7 +1,6 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import type { Role } from "@prisma/client";
 import { compare } from "bcryptjs";
-import type { NextAuthOptions } from "next-auth";
 import type { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -32,6 +31,9 @@ const providers: AuthOptions["providers"] = [
       if (!user?.passwordHash) {
         return null;
       }
+      if (!user.emailVerified) {
+        return null;
+      }
 
       const isValid = await compare(credentials.password, user.passwordHash);
       if (!isValid) {
@@ -59,7 +61,7 @@ if (hasGoogleProvider) {
   );
 }
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",

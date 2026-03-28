@@ -19,6 +19,9 @@ export default function HomePage() {
               <button type="button">Create Staff Account</button>
             </Link>
           </div>
+          <p className="muted" style={{ marginTop: 10 }}>
+            Staff registration now requires a valid invite token.
+          </p>
         </article>
         <article className="card">
           <h2>Customer Access</h2>
@@ -31,6 +34,18 @@ export default function HomePage() {
             </Link>
             <Link href="/register?role=customer">
               <button type="button">Customer Register</button>
+            </Link>
+          </div>
+          <div className="inline-buttons" style={{ marginTop: 10 }}>
+            <Link href="/forgot-password">
+              <button type="button" className="secondary">
+                Forgot Password
+              </button>
+            </Link>
+            <Link href="/verify-email">
+              <button type="button" className="secondary">
+                Verify Email
+              </button>
             </Link>
           </div>
         </article>

@@ -150,6 +150,9 @@ export default function CustomerDashboardPage() {
         <button type="button" onClick={() => void signOut({ callbackUrl: "/" })}>
           Sign out
         </button>
+        <a href="/verify-email" className="inline-link">
+          Verify email
+        </a>
       </div>
 
       {error ? <p className="error">{error}</p> : null}

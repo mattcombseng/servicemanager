@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense } from "react";
 import { FormEvent, useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AuthLinks } from "@/components/AuthLinks";
 
 function LoginContent() {
   const router = useRouter();
@@ -92,10 +92,7 @@ function LoginContent() {
           Continue with Google (customers)
         </button>
         {error ? <p className="error">{error}</p> : null}
-        <p className="muted">
-          Need an account?{" "}
-          <Link href={`/register${roleParam ? `?role=${roleParam}` : ""}`}>Create one</Link>
-        </p>
+        <AuthLinks />
       </article>
     </main>
   );

@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   role: "CUSTOMER" | "STAFF";
+  inviteToken?: string;
 };
 
-export default function RegisterForm({ role }: Props) {
+export default function RegisterForm({ role, inviteToken }: Props) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,6 +33,7 @@ export default function RegisterForm({ role }: Props) {
           password,
           role,
           phone: role === "CUSTOMER" ? phone : undefined,
+          inviteToken: role === "STAFF" ? inviteToken : undefined,
         }),
       });
 
@@ -39,6 +41,20 @@ export default function RegisterForm({ role }: Props) {
         const payload = (await response.json()) as { error?: string };
         setError(payload.error ?? "Registration failed.");
         setLoading(false);
+        return;
+      }
+
+      const payload = (await response.json()) as {
+        verificationToken?: string;
+        email?: string;
+      };
+
+      if (payload.verificationToken) {
+        const emailParam = encodeURIComponent(payload.email ?? email);
+        router.push(
+          `/verify-email?token=${encodeURIComponent(payload.verificationToken)}&email=${emailParam}`
+        );
+        router.refresh();
         return;
       }
 
