@@ -19,7 +19,7 @@ export default async function RegisterPage({
         <h1>Create {role === "STAFF" ? "Staff" : "Customer"} Account</h1>
         <p className="muted">
           {role === "STAFF"
-            ? "Staff accounts require a valid invite token from an existing staff member."
+            ? "Staff accounts require an invite token from existing staff, except for the very first staff account."
             : "Customer accounts can self-schedule appointments and optionally use Google sign-in."}
         </p>
         {role === "CUSTOMER" ? (
@@ -27,13 +27,7 @@ export default async function RegisterPage({
             New accounts must verify email before credential sign-in.
           </p>
         ) : null}
-        {role === "STAFF" && !inviteToken ? (
-          <p className="error-text">
-            A staff invite token is required. Use the invite link provided by an administrator.
-          </p>
-        ) : (
-          <RegisterForm role={role} inviteToken={role === "STAFF" ? inviteToken : undefined} />
-        )}
+        <RegisterForm role={role} inviteToken={role === "STAFF" ? inviteToken : undefined} />
         <p className="muted">
           Need a different account type?{" "}
           <Link href={role === "STAFF" ? "/register?role=customer" : "/register?role=staff"}>
