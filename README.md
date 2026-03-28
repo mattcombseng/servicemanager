@@ -85,6 +85,11 @@ After setting `DATABASE_URL`, apply migrations:
 npx prisma migrate dev --name init
 ```
 
+This repo now includes committed migrations for:
+
+- `20260301090000_phase2_core_auth` (core shop + auth models)
+- `20260301100000_phase3_payments_notifications_analytics` (payments/reminders/analytics additions)
+
 ## Build
 
 ```bash
