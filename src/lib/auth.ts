@@ -125,10 +125,11 @@ export const authOptions: AuthOptions = {
       }
       return token;
     },
-    async session({ session, user, token }) {
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = user.id;
-        session.user.role = (token.role ?? user?.role ?? "CUSTOMER") as Role;
+        // JWT sessions do not provide a stable `user` callback arg; use token data.
+        session.user.id = token.sub ?? "";
+        session.user.role = (token.role ?? "CUSTOMER") as Role;
       }
       return session;
     },
