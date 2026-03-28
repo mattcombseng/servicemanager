@@ -1,33 +1,58 @@
 # Shop Management Hub
 
-Web-based shop management solution built with **TypeScript** and **Next.js**, designed to be easy to host on **Vercel**.
+PostgreSQL-backed shop management platform built with **TypeScript** and **Next.js**, designed to deploy easily on **Vercel**.
 
-## Features
+## Phase 2 Features
 
+- **Staff authentication**
+  - Email/password sign-in for staff users
+  - Role-based access control to `/staff`
+- **Customer authentication**
+  - Email/password sign-in
+  - Google social sign-in (customer accounts only)
+  - Role-based access control to `/customer`
 - **Customer management**
-  - Save customer profiles with contact info and notes
+  - Staff can create/manage customer records
 - **Service templates**
-  - Define reusable services with default rates and durations
+  - Staff can save reusable services with default rates and durations
 - **Scheduling**
-  - Create and track customer appointments
+  - Staff can schedule appointments
+  - Customers can self-schedule appointments from their portal
 - **Invoicing**
-  - Generate invoices from customer + service selections
-  - Apply quantity and tax rate
-  - Track status (`draft`, `sent`, `paid`)
-- **Local persistence**
-  - Data is saved to browser localStorage for quick MVP usage
+  - Staff can create invoices from customers + services
+  - Tax/subtotal/total calculation and status updates (`DRAFT`, `SENT`, `PAID`)
+  - Customer self-booking auto-generates draft invoices
+- **PostgreSQL persistence**
+  - All business data is stored in Postgres via Prisma ORM
 
 ## Tech Stack
 
 - Next.js (App Router)
 - TypeScript
-- React
+- NextAuth.js
+- Prisma ORM
+- PostgreSQL
 - ESLint
 
-## Getting Started
+## Environment Variables
+
+Create a `.env` file:
+
+```bash
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME?schema=public"
+NEXTAUTH_SECRET="replace-with-a-long-random-secret"
+GOOGLE_CLIENT_ID="optional-for-customer-google-login"
+GOOGLE_CLIENT_SECRET="optional-for-customer-google-login"
+```
+
+If Google credentials are omitted, credential login still works for both roles.
+
+## Local Development
 
 ```bash
 npm install
+npm run prisma:generate
+npm run prisma:migrate
 npm run dev
 ```
 
@@ -42,8 +67,9 @@ npm run build
 ## Deploy to Vercel
 
 1. Push this repository to GitHub.
-2. Import the repo into Vercel.
-3. Keep default settings (Next.js detected automatically).
-4. Deploy.
+2. Import the repository into Vercel.
+3. Set environment variables (`DATABASE_URL`, `NEXTAUTH_SECRET`, optional Google keys).
+4. Run Prisma migration in your deployment workflow or against your hosted database before first use.
+5. Deploy.
 
 No custom server is required.
