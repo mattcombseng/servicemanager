@@ -35,6 +35,14 @@ PostgreSQL-backed shop management platform built with **TypeScript** and **Next.
   - Staff invite management screen at `/staff/invites`
 - **Calendar-style scheduling**
   - Staff dashboard includes a 14-day grouped calendar-style appointment view
+- **Payment links and processing (simulated)**
+  - Staff can generate payment links for invoices
+  - Simulated payment webhook and payment-link endpoint mark invoices paid
+- **Automated notifications/reminders**
+  - Queue and process appointment reminder + invoice due notifications
+  - Payment received notifications are created when payments succeed
+- **Reporting & analytics dashboard**
+  - Revenue trend (30 days), top services, outstanding totals, and scheduling risk indicators
 
 ## Tech Stack
 
@@ -98,3 +106,4 @@ No custom server is required.
 - Credential login requires verified email.
 - Google login remains customer-only.
 - Password reset and email verification tokens are currently returned in API responses for development/demo purposes. In production, these should be delivered through an email provider.
+- Payment links and webhook flow are currently simulated for development. Replace with Stripe checkout + signed webhooks in production.

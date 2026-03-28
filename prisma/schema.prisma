@@ -23,6 +23,24 @@ enum InvoiceStatus {
   PAID
 }
 
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum NotificationType {
+  APPOINTMENT_REMINDER
+  INVOICE_DUE
+  PAYMENT_RECEIVED
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
 model User {
   id            String          @id @default(cuid())
   name          String?
@@ -37,8 +55,9 @@ model User {
   appointments  Appointment[]   @relation("StaffCreatedAppointments")
   invoices      Invoice[]       @relation("StaffCreatedInvoices")
   staffInvites  StaffInvite[]   @relation("StaffInviter")
-  passwordResetTokens PasswordResetToken[]
+  passwordResetTokens   PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  createdPaymentLinks   PaymentLink[]   @relation("StaffCreatedPaymentLinks")
   accounts      Account[]
   sessions      Session[]
 }
@@ -55,6 +74,7 @@ model Customer {
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]
   invoices     Invoice[]
+  notifications NotificationEvent[]
 }
 
 model Service {
@@ -105,6 +125,9 @@ model Invoice {
   service          Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
   createdByStaff   User?             @relation("StaffCreatedInvoices", fields: [createdByStaffId], references: [id], onDelete: SetNull)
   lineItems        InvoiceLineItem[]
+  paymentLinks     PaymentLink[]
+  payments         Payment[]
+  notifications    NotificationEvent[]
 }
 
 model InvoiceLineItem {
@@ -191,4 +214,61 @@ model EmailVerificationToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model PaymentLink {
+  id               String        @id @default(cuid())
+  invoiceId        String
+  tokenHash        String        @unique
+  provider         String        @default("stripe-simulated")
+  status           PaymentStatus @default(PENDING)
+  amount           Decimal       @db.Decimal(10, 2)
+  expiresAt        DateTime
+  paidAt           DateTime?
+  externalRef      String?
+  createdByStaffId String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  invoice          Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  createdByStaff   User?         @relation("StaffCreatedPaymentLinks", fields: [createdByStaffId], references: [id], onDelete: SetNull)
+  payments         Payment[]
+
+  @@index([invoiceId, status])
+  @@index([expiresAt])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  invoiceId     String
+  paymentLinkId String?
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus @default(PENDING)
+  provider      String        @default("stripe-simulated")
+  paidAt        DateTime?
+  externalRef   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  paymentLink   PaymentLink?  @relation(fields: [paymentLinkId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId, status])
+}
+
+model NotificationEvent {
+  id         String             @id @default(cuid())
+  type       NotificationType
+  status     NotificationStatus @default(QUEUED)
+  customerId String
+  invoiceId  String?
+  subject    String
+  body       String
+  sentAt     DateTime?
+  metadata   Json?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  customer   Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoice    Invoice?           @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([status, type])
+  @@index([customerId, createdAt])
 }

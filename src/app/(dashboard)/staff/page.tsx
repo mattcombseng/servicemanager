@@ -5,9 +5,11 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import type {
+  AnalyticsPayload,
   AppointmentView,
   CustomerView,
   InvoiceView,
+  PaymentSummaryView,
   ServiceView,
   StaffDashboardPayload,
 } from "@/lib/dashboard-types";
@@ -17,6 +19,7 @@ type AppState = {
   services: ServiceView[];
   appointments: AppointmentView[];
   invoices: InvoiceView[];
+  payments: PaymentSummaryView[];
 };
 
 function statusLabel(status: string): string {
@@ -31,7 +34,11 @@ export default function StaffDashboardPage() {
     services: [],
     appointments: [],
     invoices: [],
+    payments: [],
   });
+  const [analytics, setAnalytics] = useState<AnalyticsPayload | null>(null);
+  const [paymentBusy, setPaymentBusy] = useState<string | null>(null);
+  const [reminderBusy, setReminderBusy] = useState(false);
   const [customerForm, setCustomerForm] = useState({
     name: "",
     email: "",
@@ -66,21 +73,35 @@ export default function StaffDashboardPage() {
     setLoading(true);
     setError("");
     try {
-      const [customersRes, servicesRes, appointmentsRes, invoicesRes] = await Promise.all([
+      const [customersRes, servicesRes, appointmentsRes, invoicesRes, analyticsRes] = await Promise.all([
         fetch("/api/staff/customers"),
         fetch("/api/staff/services"),
         fetch("/api/staff/appointments"),
         fetch("/api/staff/invoices"),
+        fetch("/api/staff/reports/analytics"),
       ]);
-      if (!customersRes.ok || !servicesRes.ok || !appointmentsRes.ok || !invoicesRes.ok) {
+      if (
+        !customersRes.ok ||
+        !servicesRes.ok ||
+        !appointmentsRes.ok ||
+        !invoicesRes.ok ||
+        !analyticsRes.ok
+      ) {
         throw new Error("Failed to load dashboard data");
       }
-      const [customersPayload, servicesPayload, appointmentsPayload, invoicesPayload] =
+      const [
+        customersPayload,
+        servicesPayload,
+        appointmentsPayload,
+        invoicesPayload,
+        analyticsPayload,
+      ] =
         await Promise.all([
           customersRes.json() as Promise<{ customers: CustomerView[] }>,
           servicesRes.json() as Promise<{ services: ServiceView[] }>,
           appointmentsRes.json() as Promise<{ appointments: AppointmentView[] }>,
-          invoicesRes.json() as Promise<{ invoices: InvoiceView[] }>,
+          invoicesRes.json() as Promise<{ invoices: InvoiceView[]; payments: PaymentSummaryView[] }>,
+          analyticsRes.json() as Promise<{ analytics: AnalyticsPayload }>,
         ]);
 
       const payload: StaffDashboardPayload = {
@@ -95,7 +116,9 @@ export default function StaffDashboardPage() {
         services: payload.services,
         appointments: payload.appointments,
         invoices: payload.invoices,
+        payments: invoicesPayload.payments ?? [],
       });
+      setAnalytics(analyticsPayload.analytics);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load data");
     } finally {
@@ -110,6 +133,13 @@ export default function StaffDashboardPage() {
   const revenueTotal = useMemo(
     () => state.invoices.reduce((sum, invoice) => sum + invoice.total, 0),
     [state.invoices]
+  );
+  const collectedTotal = useMemo(
+    () =>
+      state.payments
+        .filter((payment) => payment.status === "SUCCEEDED")
+        .reduce((sum, payment) => sum + payment.amount, 0),
+    [state.payments]
   );
 
   const upcomingAppointments = useMemo(
@@ -132,6 +162,19 @@ export default function StaffDashboardPage() {
     }
     return [...groups.entries()].slice(0, 14);
   }, [state.appointments]);
+  const maxRevenueDay = useMemo(
+    () =>
+      analytics?.revenueByDay.reduce((max, row) => Math.max(max, row.amount), 0) ?? 0,
+    [analytics?.revenueByDay]
+  );
+  const maxUtilization = useMemo(
+    () =>
+      analytics?.appointmentUtilizationByDay.reduce(
+        (max, row) => Math.max(max, row.count),
+        0
+      ) ?? 0,
+    [analytics?.appointmentUtilizationByDay]
+  );
 
   async function handleCreateCustomer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -238,6 +281,59 @@ export default function StaffDashboardPage() {
     await fetchDashboardData();
   }
 
+  async function handleCreatePaymentLink(invoiceId: string) {
+    setPaymentBusy(invoiceId);
+    setError("");
+    try {
+      const response = await fetch("/api/staff/payments/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId }),
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; paymentUrl?: string; paymentLink?: { id: string } }
+        | null;
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Unable to create payment link");
+      }
+      if (payload?.paymentUrl) {
+        // For now, open/copy simulated payment URL.
+        window.prompt("Payment link (copy):", payload.paymentUrl);
+      }
+      await fetchDashboardData();
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Unable to create payment link.");
+    } finally {
+      setPaymentBusy(null);
+    }
+  }
+
+  async function handleQueueReminders() {
+    setReminderBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/staff/notifications/send", {
+        method: "POST",
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; queued?: { total?: number }; processed?: number }
+        | null;
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Unable to queue reminders");
+      }
+      const queuedTotal = payload?.queued?.total ?? 0;
+      const processedTotal = payload?.processed ?? 0;
+      if (queuedTotal > 0 || processedTotal > 0) {
+        window.alert(`Notifications queued: ${queuedTotal}, processed: ${processedTotal}`);
+      }
+      await fetchDashboardData();
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "Unable to queue reminders.");
+    } finally {
+      setReminderBusy(false);
+    }
+  }
+
   if (loading) {
     return (
       <main className="container">
@@ -256,11 +352,6 @@ export default function StaffDashboardPage() {
         <button type="button" onClick={() => void signOut({ callbackUrl: "/" })}>
           Sign out
         </button>
-        <Link href="/staff/calendar">
-          <button type="button" className="secondary">
-            Calendar view
-          </button>
-        </Link>
         <Link href="/staff/invites">
           <button type="button" className="secondary">
             Staff invites
@@ -285,6 +376,91 @@ export default function StaffDashboardPage() {
         <article className="card">
           <h2>Total Revenue</h2>
           <p className="value">{formatCurrency(revenueTotal)}</p>
+        </article>
+        <article className="card">
+          <h2>Collected Payments</h2>
+          <p className="value">{formatCurrency(collectedTotal)}</p>
+        </article>
+      </section>
+
+      <section className="grid two-up">
+        <article className="card">
+          <h2>Analytics Snapshot</h2>
+          {!analytics ? (
+            <p className="muted">Loading analytics...</p>
+          ) : (
+            <div className="summary-stats">
+              <div>
+                <strong>Outstanding Invoices:</strong>{" "}
+                {formatCurrency(analytics.outstandingInvoiceTotal)}
+              </div>
+              <div>
+                <strong>Upcoming 7d Appointments:</strong> {analytics.upcomingSevenDaysAppointments}
+              </div>
+              <div>
+                <strong>No-show risk appointments:</strong> {analytics.noShowRiskCount}
+              </div>
+              <div>
+                <strong>Queued notifications:</strong> {analytics.queuedNotifications}
+              </div>
+              <div>
+                <strong>Top Service:</strong> {analytics.topServiceName ?? "N/A"}
+              </div>
+            </div>
+          )}
+        </article>
+        <article className="card">
+          <h2>Notifications & Reminders</h2>
+          <p className="muted">
+            Queue appointment reminders and invoice due reminders for current data.
+          </p>
+          <div className="inline-buttons" style={{ marginTop: 12 }}>
+            <button type="button" onClick={handleQueueReminders} disabled={reminderBusy}>
+              {reminderBusy ? "Queueing..." : "Queue & Process Reminders"}
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <section className="grid two-up">
+        <article className="card">
+          <h2>Revenue (last 30 days)</h2>
+          {!analytics ? (
+            <p className="muted">Loading revenue chart...</p>
+          ) : analytics.revenueByDay.length === 0 ? (
+            <p className="muted">No revenue data yet.</p>
+          ) : (
+            <div className="chart-bars">
+              {analytics.revenueByDay.map((point) => {
+                const max = Math.max(...analytics.revenueByDay.map((item) => item.amount), 1);
+                const height = Math.max(6, Math.round((point.amount / max) * 80));
+                return (
+                  <div className="chart-bar-wrap" key={point.day}>
+                    <div className="chart-bar" style={{ height }} title={`${point.day}: ${formatCurrency(point.amount)}`} />
+                    <span className="chart-label">{point.day.slice(5)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </article>
+        <article className="card">
+          <h2>Top Services</h2>
+          {!analytics ? (
+            <p className="muted">Loading service analytics...</p>
+          ) : analytics.topServices.length === 0 ? (
+            <p className="muted">No service activity yet.</p>
+          ) : (
+            <ul className="list">
+              {analytics.topServices.map((item) => (
+                <li key={item.serviceId}>
+                  <strong>{item.serviceName}</strong>
+                  <div className="muted">{item.count} appointments</div>
+                  <div className="muted">{formatCurrency(item.revenue)} revenue</div>
+                </li>
+              ))}
+            </ul>
+          )}
         </article>
       </section>
 
@@ -575,6 +751,14 @@ export default function StaffDashboardPage() {
                       {statusLabel(invoice.status)}
                     </span>
                     <div className="inline-buttons">
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={paymentBusy === invoice.id}
+                        onClick={() => handleCreatePaymentLink(invoice.id)}
+                      >
+                        {paymentBusy === invoice.id ? "Creating Link..." : "Create Payment Link"}
+                      </button>
                       {invoice.status !== "SENT" ? (
                         <button type="button" onClick={() => updateInvoiceStatus(invoice.id, "SENT")}>
                           Mark Sent
@@ -588,6 +772,26 @@ export default function StaffDashboardPage() {
                     </div>
                   </div>
                   {invoice.notes ? <div className="muted">{invoice.notes}</div> : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </article>
+      </section>
+
+      <section className="grid">
+        <article className="card">
+          <h2>Payment Activity</h2>
+          {state.payments.length === 0 ? (
+            <p className="muted">No payment activity yet.</p>
+          ) : (
+            <ul className="list">
+              {state.payments.map((payment) => (
+                <li key={payment.id}>
+                  <strong>{payment.invoiceCustomerName}</strong>
+                  <div>{formatCurrency(payment.amount)}</div>
+                  <div className="muted">Status: {statusLabel(payment.status)}</div>
+                  <div className="muted">{formatDateTime(payment.createdAt)}</div>
                 </li>
               ))}
             </ul>
